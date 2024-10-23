@@ -22,6 +22,7 @@ let currDrawing = false;
 
 const drawingArr: number[][][] = [];
 let curr: number[][] = [];
+let redo: number[][][] = [];
 
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
@@ -42,6 +43,7 @@ canvas.addEventListener("mouseup", () => {
         drawingArr.push(curr); 
         currDrawing = false;
         drawingChanged();
+        redo = [];
     }
 });
 
@@ -74,11 +76,36 @@ canvas.addEventListener("drawing-changed", () => {
     redrawCanvas();
 });
 
+const undoButton = document.createElement("button");
+undoButton.textContent = "UNDO";
+undoButton.addEventListener("click", () => {
+    if (drawingArr.length > 0) {
+        const temp = drawingArr.pop();
+        if (temp) {
+            redo.push(temp);
+            drawingChanged();
+        }
+    }
+});
+app.appendChild(undoButton);
 
+const redoButton = document.createElement("button");
+redoButton.textContent = "REDO";
+redoButton.addEventListener("click", () => {
+    if (redo.length > 0) {
+        const temp = redo.pop();
+        if (temp) {
+            drawingArr.push(temp);
+            drawingChanged();
+        }
+    }
+});
+app.appendChild(redoButton);
 const clear = document.createElement("button");
 clear.textContent = "CLEAR";
 clear.addEventListener("click", () => {
     drawingArr.length = 0;
+    redo.length = 0;
     draw.clearRect(0, 0, canvas.height, canvas.width);
 });
 app.appendChild(clear);

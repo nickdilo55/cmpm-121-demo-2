@@ -20,32 +20,65 @@ draw.lineWidth = 1;
 
 let currDrawing = false;
 
+const drawingArr: number[][][] = [];
+let curr: number[][] = [];
+
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
-    draw.fillStyle = "white";
-    draw.beginPath();
-    draw.arc(pos.offsetX, pos.offsetY, 1, 0, Math.PI * 2);
-    draw.fill();
-    draw.moveTo(pos.offsetX, pos.offsetY);
-    canvas.addEventListener("mousemove", mouseMovement);
+    curr = [];
+    curr.push([pos.offsetX, pos.offsetY]);
+    drawDot([pos.offsetX, pos.offsetY]);
+
+});
+
+canvas.addEventListener("mousemove", (pos) => {
+    if (currDrawing) {
+        curr.push([pos.offsetX, pos.offsetY]);
+    }
 });
 
 canvas.addEventListener("mouseup", () => {
-    currDrawing = false;
-    canvas.removeEventListener("mousemove", mouseMovement);
+    if (currDrawing) {
+        drawingArr.push(curr); 
+        currDrawing = false;
+        drawingChanged();
+    }
 });
 
-
-const mouseMovement = (pos: MouseEvent) => {
-    if (currDrawing) {
-        draw.lineTo(pos.offsetX, pos.offsetY);
-        draw.stroke();
-    }
+const drawingChanged = () => {
+    const event = new Event("drawing-changed");
+    canvas.dispatchEvent(event);
 };
+const drawDot = (pos: number[]) => {
+    draw.beginPath();
+    draw.arc(pos[0], pos[1], 1, 0, Math.PI * 2);
+    draw.fill();
+};
+
+const redrawCanvas = () => {
+    drawingArr.forEach((path) => {
+        draw.beginPath();
+        path.forEach((point, index) => {
+            if (index == 0) {
+                draw.moveTo(point[0], point[1]);
+            } else {
+                draw.lineTo(point[0], point[1]);
+            }
+        });
+        draw.stroke();
+    });
+};
+
+canvas.addEventListener("drawing-changed", () => {
+    draw.clearRect(0, 0, canvas.height, canvas.width);
+    redrawCanvas();
+});
+
 
 const clear = document.createElement("button");
 clear.textContent = "CLEAR";
 clear.addEventListener("click", () => {
+    drawingArr.length = 0;
     draw.clearRect(0, 0, canvas.height, canvas.width);
 });
 app.appendChild(clear);

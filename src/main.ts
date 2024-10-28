@@ -135,7 +135,11 @@ canvas.addEventListener("mousemove", (pos) => {
             prev = new Preview(pos.offsetX, pos.offsetY, undefined, curr.emoji);
         }
     } else {
-        prev = new Preview(pos.offsetX, pos.offsetY, undefined, currEmoji);
+        if (currEmoji) {
+            prev = new Preview(pos.offsetX, pos.offsetY, undefined, currEmoji);
+        } else {
+            prev = new Preview(pos.offsetX, pos.offsetY, size);
+        }
     }
     drawingChanged();
 });
@@ -203,14 +207,21 @@ addButton("Custom Sticker Creation", () => {
         drawingChanged();
     }
 });
+
+const randomColor = () => {
+    const color = Math.floor(Math.random() * 16777215).toString(16);
+    return `#${color}`;
+};
 const thick = addButton("THICK", () => {
     size = 2.5; 
+    draw.strokeStyle = randomColor();
     currEmoji = undefined;
 });
 thick.classList.add("tool");
 
 const thin = addButton("THIN", () => {
     size = 0.75; 
+    draw.strokeStyle = randomColor();
     currEmoji = undefined;
 });
 thin.classList.add("tool");

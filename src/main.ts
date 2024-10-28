@@ -235,3 +235,27 @@ addButton("CLEAR", () => {
     draw.clearRect(0, 0, canvas.width, canvas.height);
 });
 
+addButton("EXPORT", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const exported = canvas.getContext("2d")!;
+
+    exported.fillStyle = "black";
+    exported.fillRect(0, 0, canvas.width, canvas.height);
+    exported.strokeStyle = "white";
+    exported.scale(4, 4);
+
+    drawingArr.forEach(item => {
+        if (item instanceof MarkerLine) {
+            item.display(exported);
+        } else {
+            item.draw(exported);
+        }
+    });
+    const data = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = data;
+    link.download = "noted_export.png";
+    link.click();
+});

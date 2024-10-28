@@ -20,6 +20,26 @@ draw.strokeStyle = "white";
 let size = 1.5;
 let currDrawing = false;
 
+class preview {
+    x: number;
+    y: number;
+    thickness: number;
+
+    constructor(x: number, y: number, thickness: number) {
+        this.x = x;
+        this.y = y;
+        this.thickness = thickness;
+    }
+
+    draw(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.thickness, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+    }
+}
 class markerLine {
     coordinates: number[][];
     thickness: number;
@@ -54,18 +74,21 @@ class markerLine {
 let redo: markerLine[];
 let curr: markerLine | undefined;
 const drawingArr: markerLine[] = [];
+let prev: preview | undefined;
 
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
     curr = new markerLine(pos.offsetX, pos.offsetY, size);
-    curr.display(draw);
 });
 
 canvas.addEventListener("mousemove", (pos) => {
     if (curr && currDrawing) {
         curr.drag(pos.offsetX, pos.offsetY);
-        drawingChanged();
     }
+    else {
+        prev = new preview(pos.offsetX, pos.offsetY, size);
+    }
+    drawingChanged();
 });
 
 canvas.addEventListener("mouseup", () => {
@@ -73,6 +96,7 @@ canvas.addEventListener("mouseup", () => {
         drawingArr.push(curr); 
         currDrawing = false;
         curr = undefined;
+        prev = undefined;
         drawingChanged();
         redo = [];
     }
@@ -86,6 +110,9 @@ const drawingChanged = () => {
 const redrawCanvas = () => {
     draw.clearRect(0, 0, canvas.height, canvas.width);
     drawingArr.forEach(line => line.display(draw));
+    if (prev) {
+        prev.draw(draw);
+    }
 };
 
 canvas.addEventListener("drawing-changed", () => {

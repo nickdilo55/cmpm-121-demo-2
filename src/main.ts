@@ -19,28 +19,59 @@ draw.strokeStyle = "white";
 
 let size = 1.5;
 let currDrawing = false;
+let currEmoji: string | undefined;
 
-class preview {
+class Preview {
     x: number;
     y: number;
-    thickness: number;
+    thickness?: number;
+    emoji?: string;
 
-    constructor(x: number, y: number, thickness: number) {
+    constructor(x: number, y: number, thickness?: number, emoji?: string) {
         this.x = x;
         this.y = y;
         this.thickness = thickness;
+        this.emoji = emoji;
     }
 
     draw(ctx: CanvasRenderingContext2D) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.thickness, 0, Math.PI * 2);
-        ctx.fillStyle = "white";
-        ctx.lineWidth = 1;
-        ctx.fill();
-        ctx.stroke();
+        if (this.thickness) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.thickness, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.lineWidth = 1;
+            ctx.fill();
+            ctx.stroke();
+        }
+        if (this.emoji) {
+            ctx.fillText(this.emoji, this.x, this.y);
+        }
     }
 }
-class markerLine {
+
+class EmojiLine {
+    emoji: string;
+    coordinates: number[][];
+    spacing: number;
+
+    constructor(emoji: string, x: number, y: number, spacing: number) {
+        this.emoji = emoji;
+        this.coordinates = [[x, y]];
+        this.spacing = spacing;
+    }
+
+    addPosition(x: number, y: number) {
+        this.coordinates.push([x, y]);
+    }
+
+    draw(ctx: CanvasRenderingContext2D) {
+        this.coordinates.forEach(([x, y]) => {
+            ctx.fillText(this.emoji, x, y);
+        });
+    }
+}
+
+class MarkerLine {
     coordinates: number[][];
     thickness: number;
 
@@ -53,9 +84,7 @@ class markerLine {
         this.coordinates.push([x, y]);
     }
 
-    display(ctx: {
-      lineWidth: number; beginPath: () => void; moveTo: (arg0: number, arg1: number) => void; lineTo: (arg0: number, arg1: number) => void; stroke: () => void; 
-}) {
+    display(ctx: CanvasRenderingContext2D) {
         if (this.coordinates.length < 2) {
             return;
         }
@@ -71,29 +100,46 @@ class markerLine {
     }
 }
 
-let redo: markerLine[];
-let curr: markerLine | undefined;
-const drawingArr: markerLine[] = [];
-let prev: preview | undefined;
+let redo: (MarkerLine | EmojiLine )[] = [];
+let curr: MarkerLine | EmojiLine | undefined; 
+const drawingArr: (MarkerLine | EmojiLine )[] = [];
+let prev: Preview | undefined;
 
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
-    curr = new markerLine(pos.offsetX, pos.offsetY, size);
+    if (currEmoji) {
+        curr = new EmojiLine(currEmoji, pos.offsetX, pos.offsetY, spacing); 
+        drawingArr.push(curr);
+    } else {
+        curr = new MarkerLine(pos.offsetX, pos.offsetY, size); 
+        drawingArr.push(curr);
+    }
 });
+
+const spacing = 10;
+let temp: { x: number, y: number} | undefined;
 
 canvas.addEventListener("mousemove", (pos) => {
     if (curr && currDrawing) {
-        curr.drag(pos.offsetX, pos.offsetY);
-    }
-    else {
-        prev = new preview(pos.offsetX, pos.offsetY, size);
+        if (curr instanceof MarkerLine) {
+            curr.drag(pos.offsetX, pos.offsetY);
+            prev = new Preview(pos.offsetX, pos.offsetY, size);
+        } else if (curr instanceof EmojiLine) {
+            const currPos = { x: pos.offsetX, y: pos.offsetY };
+            if (!temp || Math.abs(currPos.x - temp.x) > spacing || Math.abs(currPos.y - temp.y) > spacing) {
+                curr.addPosition(pos.offsetX, pos.offsetY);
+                temp = currPos;
+            }
+            prev = new Preview(pos.offsetX, pos.offsetY, undefined, curr.emoji);
+        }
+    } else {
+        prev = new Preview(pos.offsetX, pos.offsetY, undefined, currEmoji);
     }
     drawingChanged();
 });
 
 canvas.addEventListener("mouseup", () => {
     if (curr && currDrawing) {
-        drawingArr.push(curr); 
         currDrawing = false;
         curr = undefined;
         prev = undefined;
@@ -109,14 +155,17 @@ const drawingChanged = () => {
 
 const redrawCanvas = () => {
     draw.clearRect(0, 0, canvas.height, canvas.width);
-    drawingArr.forEach(line => line.display(draw));
-    if (prev) {
-        prev.draw(draw);
-    }
+    drawingArr.forEach(item => {
+        if (item instanceof MarkerLine) {
+            item.display(draw);
+        } else {
+            item.draw(draw); 
+        }
+    });
+    prev?.draw(draw);
 };
 
 canvas.addEventListener("drawing-changed", () => {
-    draw.clearRect(0, 0, canvas.height, canvas.width);
     redrawCanvas();
 });
 
@@ -128,10 +177,30 @@ const addButton = (text: string, clicked: () => void) => {
     return button;
 };
 
-const thick = addButton("THICK", () => size = 2.5);
+const addSticker = (emoji: string) => {
+    const button = document.createElement("button");
+    button.textContent = emoji;
+    button.addEventListener("click", () => {
+        currEmoji = emoji; 
+        drawingChanged(); 
+    });
+    app.appendChild(button);
+};
+
+addSticker("💀"); 
+addSticker("👻"); 
+addSticker("👹");
+
+const thick = addButton("THICK", () => {
+    size = 2.5; 
+    currEmoji = undefined;
+});
 thick.classList.add("tool");
 
-const thin = addButton("THIN", () => size = 0.75);
+const thin = addButton("THIN", () => {
+    size = 0.75; 
+    currEmoji = undefined;
+});
 thin.classList.add("tool");
 
 addButton("UNDO", () => {
@@ -153,5 +222,4 @@ addButton("CLEAR", () => {
     redo.length = 0;
     draw.clearRect(0, 0, canvas.width, canvas.height);
 });
-
 

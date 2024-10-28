@@ -20,28 +20,54 @@ draw.lineWidth = 1;
 
 let currDrawing = false;
 
-const drawingArr: number[][][] = [];
-let curr: number[][] = [];
-let redo: number[][][] = [];
+class markerLine {
+    coordinates: number[][];
+
+    constructor(x: number, y: number) {
+        this.coordinates = [[x, y]];
+    }
+
+    drag(x: number, y: number) {
+        this.coordinates.push([x, y]);
+    }
+
+    display(ctx: { beginPath: () => void; moveTo: (arg0: number, arg1: number) => void; lineTo: (arg0: number, arg1: number) => void; stroke: () => void; }) {
+        if (this.coordinates.length < 2) {
+            return;
+        }
+        ctx.beginPath();
+        ctx.moveTo(this.coordinates[0][0], this.coordinates[0][1]);
+
+        for (let i = 1; i < this.coordinates.length; i++) {
+            const [x, y] = this.coordinates[i];
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+}
+
+let redo: markerLine[];
+let curr: markerLine | null = null;
+const drawingArr: markerLine[] = [];
 
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
-    curr = [];
-    curr.push([pos.offsetX, pos.offsetY]);
-    drawDot([pos.offsetX, pos.offsetY]);
-
+    curr = new markerLine(pos.offsetX, pos.offsetY);
+    curr.display(draw);
 });
 
 canvas.addEventListener("mousemove", (pos) => {
-    if (currDrawing) {
-        curr.push([pos.offsetX, pos.offsetY]);
+    if (curr && currDrawing) {
+        curr.drag(pos.offsetX, pos.offsetY);
+        drawingChanged();
     }
 });
 
 canvas.addEventListener("mouseup", () => {
-    if (currDrawing) {
+    if (curr && currDrawing) {
         drawingArr.push(curr); 
         currDrawing = false;
+        curr = null;
         drawingChanged();
         redo = [];
     }
@@ -51,24 +77,10 @@ const drawingChanged = () => {
     const event = new Event("drawing-changed");
     canvas.dispatchEvent(event);
 };
-const drawDot = (pos: number[]) => {
-    draw.beginPath();
-    draw.arc(pos[0], pos[1], 1, 0, Math.PI * 2);
-    draw.fill();
-};
 
 const redrawCanvas = () => {
-    drawingArr.forEach((path) => {
-        draw.beginPath();
-        path.forEach((point, index) => {
-            if (index == 0) {
-                draw.moveTo(point[0], point[1]);
-            } else {
-                draw.lineTo(point[0], point[1]);
-            }
-        });
-        draw.stroke();
-    });
+    draw.clearRect(0, 0, canvas.height, canvas.width);
+    drawingArr.forEach(line => line.display(draw));
 };
 
 canvas.addEventListener("drawing-changed", () => {
@@ -76,36 +88,31 @@ canvas.addEventListener("drawing-changed", () => {
     redrawCanvas();
 });
 
-const undoButton = document.createElement("button");
-undoButton.textContent = "UNDO";
-undoButton.addEventListener("click", () => {
-    if (drawingArr.length > 0) {
-        const temp = drawingArr.pop();
-        if (temp) {
-            redo.push(temp);
-            drawingChanged();
-        }
-    }
-});
-app.appendChild(undoButton);
+const addButton = (text: string, clicked: () => void) => {
+    const button = document.createElement("button");
+    button.textContent = text;
+    button.addEventListener("click", clicked);
+    app.appendChild(button);
+};
 
-const redoButton = document.createElement("button");
-redoButton.textContent = "REDO";
-redoButton.addEventListener("click", () => {
-    if (redo.length > 0) {
-        const temp = redo.pop();
-        if (temp) {
-            drawingArr.push(temp);
-            drawingChanged();
-        }
+addButton("UNDO", () => {
+    if (drawingArr.length > 0) {
+        redo.push(drawingArr.pop()!);
+        drawingChanged();
     }
 });
-app.appendChild(redoButton);
-const clear = document.createElement("button");
-clear.textContent = "CLEAR";
-clear.addEventListener("click", () => {
+
+addButton("REDO", () => {
+    if (redo.length > 0) {
+        drawingArr.push(redo.pop()!);
+        drawingChanged();
+    }
+});
+
+addButton("CLEAR", () => {
     drawingArr.length = 0;
     redo.length = 0;
-    draw.clearRect(0, 0, canvas.height, canvas.width);
+    draw.clearRect(0, 0, canvas.width, canvas.height);
 });
-app.appendChild(clear);
+
+

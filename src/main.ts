@@ -51,7 +51,7 @@ class Preview {
     }
 }
 
-class EmojiLine {
+class Emojis {
     emoji: string;
     coordinates: number[][];
     spacing: number;
@@ -73,7 +73,7 @@ class EmojiLine {
     }
 }
 
-class MarkerLine {
+class Squiggles {
     coordinates: number[][];
     thickness: number;
 
@@ -102,18 +102,18 @@ class MarkerLine {
     }
 }
 
-let redo: (MarkerLine | EmojiLine )[] = [];
-let curr: MarkerLine | EmojiLine | undefined; 
-const drawingArr: (MarkerLine | EmojiLine )[] = [];
+let redo: (Squiggles | Emojis )[] = [];
+let curr: Squiggles | Emojis | undefined; 
+const drawingArr: (Squiggles | Emojis )[] = [];
 let prev: Preview | undefined;
 
 canvas.addEventListener("mousedown", (pos) => {
     currDrawing = true;
     if (currEmoji) {
-        curr = new EmojiLine(currEmoji, pos.offsetX, pos.offsetY, spacing); 
+        curr = new Emojis(currEmoji, pos.offsetX, pos.offsetY, spacing); 
         drawingArr.push(curr);
     } else {
-        curr = new MarkerLine(pos.offsetX, pos.offsetY, size); 
+        curr = new Squiggles(pos.offsetX, pos.offsetY, size); 
         drawingArr.push(curr);
     }
 });
@@ -123,10 +123,10 @@ let temp: { x: number, y: number} | undefined;
 
 canvas.addEventListener("mousemove", (pos) => {
     if (curr && currDrawing) {
-        if (curr instanceof MarkerLine) {
+        if (curr instanceof Squiggles) {
             curr.drag(pos.offsetX, pos.offsetY);
             prev = new Preview(pos.offsetX, pos.offsetY, size);
-        } else if (curr instanceof EmojiLine) {
+        } else if (curr instanceof Emojis) {
             const currPos = { x: pos.offsetX, y: pos.offsetY };
             if (!temp || Math.abs(currPos.x - temp.x) > spacing || Math.abs(currPos.y - temp.y) > spacing) {
                 curr.addPosition(pos.offsetX, pos.offsetY);
@@ -158,7 +158,7 @@ const drawingChanged = () => {
 const redrawCanvas = () => {
     draw.clearRect(0, 0, canvas.height, canvas.width);
     drawingArr.forEach(item => {
-        if (item instanceof MarkerLine) {
+        if (item instanceof Squiggles) {
             item.display(draw);
         } else {
             item.draw(draw); 
@@ -247,7 +247,7 @@ addButton("EXPORT", () => {
     exported.scale(4, 4);
 
     drawingArr.forEach(item => {
-        if (item instanceof MarkerLine) {
+        if (item instanceof Squiggles) {
             item.display(exported);
         } else {
             item.draw(exported);

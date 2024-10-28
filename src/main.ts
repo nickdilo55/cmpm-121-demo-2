@@ -17,6 +17,8 @@ app.appendChild(canvas);
 const draw = canvas.getContext("2d")!;
 draw.strokeStyle = "white";
 
+
+const stickers: string[] = ["💀", "👻", "👹"];
 let size = 1.5;
 let currDrawing = false;
 let currEmoji: string | undefined;
@@ -177,20 +179,30 @@ const addButton = (text: string, clicked: () => void) => {
     return button;
 };
 
-const addSticker = (emoji: string) => {
+const initialStickers = () => {
+    stickers.forEach(emoji => addSticker(emoji));
+};
+
+const addSticker = (emoji:string) => {
     const button = document.createElement("button");
     button.textContent = emoji;
+    button.classList.add("sticker-button");
     button.addEventListener("click", () => {
         currEmoji = emoji; 
         drawingChanged(); 
     });
     app.appendChild(button);
 };
+initialStickers();
 
-addSticker("💀"); 
-addSticker("👻"); 
-addSticker("👹");
-
+addButton("Custom Sticker Creation", () => {
+    const custEmoji = prompt("Enter emoji:", "");
+    if (custEmoji) {
+        stickers.push(custEmoji);
+        addSticker(custEmoji);
+        drawingChanged();
+    }
+});
 const thick = addButton("THICK", () => {
     size = 2.5; 
     currEmoji = undefined;

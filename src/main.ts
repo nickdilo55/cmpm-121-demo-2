@@ -5,14 +5,57 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 
 document.title = APP_NAME;
 
+app.style.display = "flex"; // Make children of app flex items
+app.style.height = "100vh"; // Make app take the full viewport height
+app.style.width = "100vw"; // Make app take the full viewport width
+app.style.flexDirection = "column"; // Arrange children side by side
+
+const topTitleBanner = document.createElement("div");
+topTitleBanner.style.display = "flex";
+topTitleBanner.style.flexDirection = "column";
+topTitleBanner.style.width = "100%";
+app.appendChild(topTitleBanner);
+
+const bottomContainer = document.createElement("div");
+bottomContainer.style.display = "flex";
+bottomContainer.style.flexDirection = "row";
+bottomContainer.style.width = "100%";
+app.appendChild(bottomContainer);
+
+const leftSidePanel = document.createElement("div");
+leftSidePanel.style.display = "flex";
+leftSidePanel.style.flexDirection = "column";
+leftSidePanel.style.width = "20%";
+bottomContainer.appendChild(leftSidePanel);
+
+const rightSidePanel = document.createElement("div");
+rightSidePanel.style.display = "flex";
+rightSidePanel.style.flexDirection = "column";
+rightSidePanel.style.width = "80%";
+bottomContainer.appendChild(rightSidePanel);
+
+const rightTopCanvas = document.createElement("div");
+rightTopCanvas.style.display = "flex";
+rightTopCanvas.style.flexDirection = "column";
+rightTopCanvas.style.width = "80%";
+rightSidePanel.appendChild(rightTopCanvas);
+
+const rightBottomPanel = document.createElement("div");
+rightBottomPanel.style.display = "flex";
+rightBottomPanel.style.flexDirection = "row";
+rightBottomPanel.style.width = "80%";
+rightSidePanel.appendChild(rightBottomPanel);
+
 const title = document.createElement("h1");
 title.textContent = APP_NAME;
-app.appendChild(title);
+// app.appendChild(title);
+topTitleBanner.appendChild(title);
 
 const canvas = document.createElement("canvas");
-canvas.height = 256;
-canvas.width = 256;
-app.appendChild(canvas);
+canvas.height = window.innerHeight * 0.6;
+canvas.width = window.innerWidth * 0.6;
+// app.appendChild(canvas);
+rightTopCanvas.appendChild(canvas);
 
 const draw = canvas.getContext("2d")!;
 draw.strokeStyle = "white";
@@ -175,11 +218,11 @@ canvas.addEventListener("drawing-changed", () => {
     redrawCanvas();
 });
 
-const addButton = (text: string, clicked: () => void) => {
+const addButton = (text: string, container: HTMLDivElement, clicked: () => void) => {
     const button = document.createElement("button");
     button.textContent = text;
     button.addEventListener("click", clicked);
-    app.appendChild(button);
+    container.appendChild(button);
     return button;
 };
 
@@ -195,58 +238,51 @@ const addSticker = (emoji:string) => {
         currEmoji = emoji; 
         drawingChanged(); 
     });
-    app.appendChild(button);
+    // app.appendChild(button);
+    rightBottomPanel.appendChild(button);
 };
 initialStickers();
 
-addButton("Custom Sticker Creation", () => {
-    const custEmoji = prompt("Enter emoji:", "");
-    if (custEmoji) {
-        stickers.push(custEmoji);
-        addSticker(custEmoji);
-        drawingChanged();
-    }
-});
 
 const randomColor = () => {
     const color = Math.floor(Math.random() * 16777215).toString(16);
     return `#${color}`;
 };
-const thick = addButton("THICK", () => {
+const thick = addButton("THICK", leftSidePanel, () => {
     size = 2.5; 
     draw.strokeStyle = randomColor();
     currEmoji = undefined;
 });
 thick.classList.add("tool");
 
-const thin = addButton("THIN", () => {
+const thin = addButton("THIN", leftSidePanel, () => {
     size = 0.75; 
     draw.strokeStyle = randomColor();
     currEmoji = undefined;
 });
 thin.classList.add("tool");
 
-addButton("UNDO", () => {
+addButton("UNDO", leftSidePanel, () => {
     if (drawingArr.length > 0) {
         redo.push(drawingArr.pop()!);
         drawingChanged();
     }
 });
 
-addButton("REDO", () => {
+addButton("REDO", leftSidePanel, () => {
     if (redo.length > 0) {
         drawingArr.push(redo.pop()!);
         drawingChanged();
     }
 });
 
-addButton("CLEAR", () => {
+addButton("CLEAR", leftSidePanel, () => {
     drawingArr.length = 0;
     redo.length = 0;
     draw.clearRect(0, 0, canvas.width, canvas.height);
 });
 
-addButton("EXPORT", () => {
+addButton("EXPORT", leftSidePanel, () => {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
     canvas.height = 1024;
@@ -269,4 +305,13 @@ addButton("EXPORT", () => {
     link.href = data;
     link.download = "noted_export.png";
     link.click();
+});
+
+addButton("Custom Sticker Creation", leftSidePanel, () => {
+    const custEmoji = prompt("Enter emoji:", "");
+    if (custEmoji) {
+        stickers.push(custEmoji);
+        addSticker(custEmoji);
+        drawingChanged();
+    }
 });
